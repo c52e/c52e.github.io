@@ -12,12 +12,14 @@
             <td><input id="init-input" value="0" onchange="draw()"/></td>
         </tr>
         <tr>
-            <td>Type</td>
-            <td><input id="type-input" value="22" onchange="draw()"/></td>
-        </tr>
-        <tr>
             <td>Scale</td>
             <td><input id="scale-input" type="range" min="0.01" max="1.0" step=0.01 value="1.0" onchange="draw()"/></td>
+        </tr>
+        <tr>
+            <td>Rule</td>
+            <td>
+                <table id="rule-table"> </table>
+            </td>
         </tr>
     </table>
 
@@ -110,6 +112,35 @@
             }
             return res;
         }
+
+        function initRuleGui() {
+            const initRule = [0, 1, 1, 0, 1, 0, 0, 0];
+            const ruleTable = document.getElementById("rule-table");
+            var html = "";
+            for (var i = 0; i < 8; ++i) {
+                var label = "";
+                for (var j = 0; j < 3; ++j) {
+                    label = (((i >> j) & 1) == 0 ? "□" : "■") + label;
+                }
+                const checked = initRule[i] == 1 ? "checked" : "";
+                html += `
+                    <tr>
+                        <td>${label}</td>
+                        <td><input id="rule${i}" type="checkbox" ${checked} onchange="draw()"/></td>
+                    </tr>
+                `;
+            }
+            ruleTable.innerHTML = html;
+        }
+
+        function getRuleTypeNumer() {
+            var type = 0;
+            for (var i = 0; i < 8; ++i) {
+                const checked = document.getElementById(`rule${i}`).checked;
+                type += checked ? (1 << i) : 0;
+            }
+            return type;
+        }
         
         function draw() {
             try {
@@ -117,8 +148,8 @@
                 for(let i in init) {
                     init[i] = parseInt(init[i]);
                 }
-                var type = parseInt(typeInput.value);
                 var scale = parseFloat(scaleInput.value);
+                var type = getRuleTypeNumer();
             } catch(err) {
                 console.log("error when parse input");
                 return;
@@ -141,8 +172,8 @@
         }
         
         var initInput = document.getElementById("init-input");
-        var typeInput = document.getElementById("type-input");
         var scaleInput = document.getElementById("scale-input");
+        initRuleGui();
 
         var canvas = document.getElementById("canvas");
         var gl = canvas.getContext("experimental-webgl");
