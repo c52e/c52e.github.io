@@ -221,9 +221,10 @@
                 return -Div(F${kNumRoots}(x${uniformArgs}), Dfdx${kNumRoots}(x${uniformArgs}));
             }
 
-            vec4 Sample(vec2 x) {
+            vec4 Sample(vec2 originx) {
                 vec4 res = vec4(0);
 
+                vec2 x = originx;
                 for (int i = 0; i < kSteps; ++i) {
                     x += Step(x);
                 }
@@ -246,7 +247,7 @@
                 }
 
                 for (int i = 0; i < kNumRoots; ++i) {
-                    float pixel_distance = length(gl_FragCoord.xy - roots[i]);
+                    float pixel_distance = length(originx - roots[i]);
                     if (pixel_distance >= 3.5 && pixel_distance <= 6.5) {
                         res = vec4(fract(colors[i] + vec3(0.5, 0.5, 0.5)), 1.0);
                     }
