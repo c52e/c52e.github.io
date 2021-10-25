@@ -7,35 +7,39 @@
 <body>
     <canvas id="canvas" width=800, height=800></canvas>
     
-    <table id="params" style="position:absolute; left:830px; top:10px;">
-        <tr>
-            <td>NumSteps</td>
-            <td><input id="steps-input" value="15" onchange="compile();draw()"/></td>
-        </tr>
-        <tr>
-            <td>Supersampling</td>
-            <td>
-                <select id="supersampling" onchange="compile();draw()">
-                    <option value="1">off</option>
-                    <option value="2"> x2</option>
-                    <option value="4"> x4</option>
-                    <option value="8"> x8</option>
-                </select>
-            </td>
-        </tr>
-        <tr>
-            <td>Points</td>
-            <td id = "colors"></td>
-        </tr>
-        <tr>
-            <td>
-                <button onclick="points.push();compile();draw()">+</button>
-                <button onclick="points.pop();compile();draw()">-</button>
-            </td>
-            <td></td>
-        </tr>
-    </table>
-
+    <div style="position:absolute; left:830px; top:10px;">
+        <table id="params">
+            <tr>
+                <td>NumSteps</td>
+                <td><input id="steps-input" value="15" onchange="compile();draw()"/></td>
+            </tr>
+            <tr>
+                <td>Supersampling</td>
+                <td>
+                    <select id="supersampling" onchange="compile();draw()">
+                        <option value="1">off</option>
+                        <option value="2"> x2</option>
+                        <option value="4"> x4</option>
+                        <option value="8"> x8</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>Points</td>
+                <td id = "colors"></td>
+            </tr>
+        </table>
+        <button onclick="points.push();compile();draw()">+</button>
+        <button onclick="points.pop();compile();draw()">-</button>
+        
+        <h3>Notes</h3>
+        <ul>
+            <li>You can drag the points with your mouse.</li>
+            <li>Too many points may cause artifacts.</li>
+            <li>Mobile browsers are not supported yet.</li>
+        </ul>
+    </div>
+    
     <script type="text/javascript" src="glutils.js"></script>
     <script type="text/javascript">
         var canvas = document.getElementById("canvas");
