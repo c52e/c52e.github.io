@@ -10,7 +10,7 @@
     <div style="position:absolute; left:830px; top:10px;">
         <table id="params">
             <tr>
-                <td>NumSteps</td>
+                <td>Iteration Steps</td>
                 <td><input id="steps-input" value="15" onchange="compile();draw()"/></td>
             </tr>
             <tr>
@@ -35,7 +35,6 @@
         <h3>Notes</h3>
         <ul>
             <li>You can drag the points with your mouse.</li>
-            <li>Too many points may cause artifacts.</li>
             <li>Mobile browsers are not supported yet.</li>
         </ul>
     </div>
@@ -44,6 +43,10 @@
     <script type="text/javascript">
         var canvas = document.getElementById("canvas");
         var gl = canvas.getContext("experimental-webgl");
+
+        // Scale from coord to complex number to avoid float overflow when there are too many points.
+        const kComplexToCoord = Math.min(canvas.width, canvas.height);
+        const kCoordToComplex = 1.0 / kComplexToCoord;
 
         var colorsContainer = document.getElementById("colors");
         var points =  {
@@ -75,8 +78,8 @@
             positionsArray() {
                 let res = new Float32Array(this.length() * 2);
                 for (let i = 0; i < this.length(); ++i) {
-                    res[i * 2 + 0] = this.positions[i][0];
-                    res[i * 2 + 1] = this.positions[i][1];
+                    res[i * 2 + 0] = this.positions[i][0] * kCoordToComplex;
+                    res[i * 2 + 1] = this.positions[i][1] * kCoordToComplex;
                 }
                 return res;
             },
@@ -221,10 +224,10 @@
                 return -Div(F${kNumRoots}(x${uniformArgs}), Dfdx${kNumRoots}(x${uniformArgs}));
             }
 
-            vec4 Sample(vec2 originx) {
+            vec4 Sample(vec2 coord) {
                 vec4 res = vec4(0);
 
-                vec2 x = originx;
+                vec2 x = coord * ${kCoordToComplex};
                 for (int i = 0; i < kSteps; ++i) {
                     x += Step(x);
                 }
@@ -247,7 +250,7 @@
                 }
 
                 for (int i = 0; i < kNumRoots; ++i) {
-                    float pixel_distance = length(originx - roots[i]);
+                    float pixel_distance = length(coord - roots[i] * float(${kComplexToCoord}));
                     if (pixel_distance >= 3.5 && pixel_distance <= 6.5) {
                         res = vec4(fract(colors[i] + vec3(0.5, 0.5, 0.5)), 1.0);
                     }
