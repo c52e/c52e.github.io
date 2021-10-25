@@ -13,6 +13,17 @@
             <td><input id="steps-input" value="15" onchange="compile();draw()"/></td>
         </tr>
         <tr>
+            <td>Supersampling</td>
+            <td>
+                <select id="supersampling" onchange="compile();draw()">
+                    <option value="1">off</option>
+                    <option value="2"> x2</option>
+                    <option value="4"> x4</option>
+                    <option value="8"> x8</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
             <td>Points</td>
             <td id = "colors"></td>
         </tr>
@@ -182,7 +193,7 @@
             }
 
             const uniformArgs = generateUniformArgs(kNumRoots);
-
+            
             const fragment_shader = `
             precision mediump float;
 
@@ -206,8 +217,9 @@
                 return -Div(F${kNumRoots}(x${uniformArgs}), Dfdx${kNumRoots}(x${uniformArgs}));
             }
 
-            void main() {
-                vec2 x = gl_FragCoord.xy;
+            vec4 Sample(vec2 x) {
+                vec4 res = vec4(0);
+
                 for (int i = 0; i < kSteps; ++i) {
                     x += Step(x);
                 }
@@ -224,7 +236,7 @@
 
                 for (int i = 0; i < kNumRoots; ++i) {
                     if (distances[i] == min_distance) {
-                        gl_FragColor = vec4(colors[i], 1.0);
+                        res = vec4(colors[i], 1.0);
                         break;
                     }
                 }
@@ -232,9 +244,45 @@
                 for (int i = 0; i < kNumRoots; ++i) {
                     float pixel_distance = length(gl_FragCoord.xy - roots[i]);
                     if (pixel_distance >= 3.5 && pixel_distance <= 6.5) {
-                        gl_FragColor = vec4(fract(colors[i] + vec3(0.5, 0.5, 0.5)), 1.0);
+                        res = vec4(fract(colors[i] + vec3(0.5, 0.5, 0.5)), 1.0);
                     }
                 }
+
+                return res;
+            }
+
+            void main() {
+            #define NUM_SAMPLES ${document.getElementById("supersampling").value}
+            #if NUM_SAMPLES == 8
+                vec2 biases[NUM_SAMPLES];
+                biases[0] = vec2(-7.0 / 16.0,  1.0 / 16.0);
+                biases[1] = vec2(-3.0 / 16.0,  5.0 / 16.0);
+                biases[2] = vec2( 1.0 / 16.0,  3.0 / 16.0);
+                biases[3] = vec2( 7.0 / 16.0,  7.0 / 16.0);
+                biases[4] = vec2( 5.0 / 16.0, -1.0 / 16.0);
+                biases[5] = vec2( 3.0 / 16.0, -7.0 / 16.0);
+                biases[6] = vec2(-1.0 / 16.0, -3.0 / 16.0);
+                biases[7] = vec2(-5.0 / 16.0, -5.0 / 16.0);
+            #elif NUM_SAMPLES == 4
+                vec2 biases[NUM_SAMPLES];
+                biases[0] = vec2(-1.0 / 8.0,  3.0 / 4.0);
+                biases[1] = vec2( 3.0 / 8.0,  1.0 / 8.0);
+                biases[2] = vec2( 1.0 / 8.0, -3.0 / 8.0);
+                biases[3] = vec2(-3.0 / 8.0, -1.0 / 8.0);
+            #elif NUM_SAMPLES == 2
+                vec2 biases[NUM_SAMPLES];
+                biases[0] = vec2(-1.0 / 4.0,  1.0 / 4.0);
+                biases[1] = vec2( 1.0 / 4.0, -1.0 / 4.0);
+            #else
+                vec2 biases[NUM_SAMPLES];
+                biases[0] = vec2(0, 0);
+            #endif
+
+                vec4 sum = vec4(0);
+                for (int i = 0; i < NUM_SAMPLES; ++i) {
+                    sum += Sample(gl_FragCoord.xy + biases[i]);
+                }
+                gl_FragColor = sum * (1.0 / float(NUM_SAMPLES));
             }
             `;
 
