@@ -8,7 +8,7 @@
     <canvas id="canvas" width=800, height=800></canvas>
     
     <div style="position:absolute; left:830px; top:10px;">
-        <table id="params">
+        <table id="params" style="border-collapse: separate;border-spacing: 0 20px;">
             <tr>
                 <td>Iteration Steps</td>
                 <td><input id="steps-input" value="15" onchange="compile();draw()"/></td>
@@ -34,8 +34,7 @@
         
         <h3>Notes</h3>
         <ul>
-            <li>You can drag the points with your mouse.</li>
-            <li>Mobile browsers are not supported yet.</li>
+            <li>You can drag the points with your mouse or finger.</li>
         </ul>
     </div>
     
@@ -308,8 +307,8 @@
             gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
         }
         
-        function getPosition(e) {
-            return [e.offsetX, canvas.height - 1 - e.offsetY];
+        function getPosition(lefttopx, lefttopy) {
+            return [lefttopx, canvas.height - 1 - lefttopy];
         }
 
         var index = -1;
@@ -320,19 +319,47 @@
             return Math.sqrt(dx * dx, dy * dy);
         }
 
-        canvas.addEventListener("mousedown", e => {
-            const click_position = getPosition(e);
+        function dragstart(lefttopX, lefttopY) {
+            const click_position = getPosition(lefttopX, lefttopY);
             index = points.closestIndex(click_position);
-        });
-        canvas.addEventListener("mousemove", e => {
+        }
+        function dragmove(lefttopX, lefttopY) {
             if (index != -1) {
-                const click_position = getPosition(e);
+                const click_position = getPosition(lefttopX, lefttopY);
                 points.setPosition(index, click_position);
                 draw();
             }
-        });
-        canvas.addEventListener("mouseup", e => {
+        }
+        function dragend() {
             index = -1;
+        }
+        canvas.addEventListener("mousedown",  e => {
+            dragstart(e.offsetX, e.offsetY);
+        });
+        canvas.addEventListener("mousemove",  e => {
+            dragmove(e.offsetX, e.offsetY);
+        });
+        canvas.addEventListener("mouseup",  e => {
+            dragend();
+        });
+        canvas.addEventListener("touchstart", e => {
+            dragstart(e.touches[0].pageX, e.touches[0].pageY);
+        });
+        canvas.addEventListener("touchmove", e => {
+            if (e.touches.length == 1) {
+                e.preventDefault();
+                dragmove(e.touches[0].pageX, e.touches[0].pageY);
+            } else {
+                dragend();
+            }
+        });
+        canvas.addEventListener("touchend", e => {
+            e.preventDefault();
+            dragend();
+        });
+        canvas.addEventListener("touchcancel", e => {
+            e.preventDefault();
+            dragend();
         });
 
         var buffer = gl.createBuffer();
