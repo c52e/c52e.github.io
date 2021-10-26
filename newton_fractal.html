@@ -5,9 +5,9 @@
     <title>Newton Fractal</title>
 </head>
 <body>
-    <canvas id="canvas" width=800, height=800></canvas>
+    <canvas id="canvas" style="position:absolute; left:0px; top:0px;"></canvas>
     
-    <div style="position:absolute; left:830px; top:10px;">
+    <div id="guipanel" style="position:absolute;">
         <table id="params" style="border-collapse: separate;border-spacing: 0 20px;">
             <tr>
                 <td>Iteration Steps</td>
@@ -29,8 +29,9 @@
                 <td id = "colors"></td>
             </tr>
         </table>
-        <button onclick="points.push();compile();draw()">+</button>
-        <button onclick="points.pop();compile();draw()">-</button>
+        <button onclick="points.push();compile();draw()">New</button>
+        &emsp;
+        <button onclick="points.pop();compile();draw()">Delete</button>
         
         <h3>Notes</h3>
         <ul>
@@ -41,8 +42,19 @@
     <script type="text/javascript" src="glutils.js"></script>
     <script type="text/javascript">
         var canvas = document.getElementById("canvas");
-        var gl = canvas.getContext("webgl");
+        const canvas_width = Math.min(window.innerWidth, window.innerHeight);
+        canvas.width = canvas_width;
+        canvas.height = canvas_width;
+        var guipanel = document.getElementById("guipanel");
+        if (window.innerWidth > window.innerHeight) {
+            guipanel.style.left = 20 + window.innerHeight + "px";
+            guipanel.style.top = "0px";
+        } else {
+            guipanel.style.top = window.innerWidth + "px";
+            guipanel.style.left = "20px";
+        }
 
+        var gl = canvas.getContext("webgl");
         // Scale from coord to complex number to avoid float overflow when there are too many points.
         const kComplexToCoord = Math.min(canvas.width, canvas.height);
         const kCoordToComplex = 1.0 / kComplexToCoord;
