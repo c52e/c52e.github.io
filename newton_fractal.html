@@ -36,7 +36,7 @@
         <h3>Notes</h3>
         <ul>
             <li>You can drag the points with your mouse or finger.</li>
-            <li>You can zoom in or out with your scroll wheel.</li>
+            <li>You can zoom in or out with your scroll wheel or two fingers.</li>
         </ul>
     </div>
     
@@ -349,27 +349,12 @@
         }
 
         var index = -1;
-        
-        function distance(p1, p2) {
-            const dx = p1[0] - p2[0];
-            const dy = p1[1] - p2[1];
-            return Math.sqrt(dx * dx, dy * dy);
-        }
 
         function dragstart(lefttopX, lefttopY) {
             let [closestIndex, minDistance] = points.closestIndex([lefttopX, lefttopY]);
             if (minDistance < 50) {
                 index = closestIndex;
             }
-        }
-        function dragmove(lefttopX, lefttopY) {
-            if (index != -1) {
-                points.setPosition(index, [lefttopX, lefttopY]);
-                draw();
-            }
-        }
-        function dragend() {
-            index = -1;
         }
         var mousedown = false;
         canvas.addEventListener("mousedown",  e => {
@@ -378,7 +363,8 @@
         });
         canvas.addEventListener("mousemove",  e => {
             if (index != -1) {
-                dragmove(e.offsetX, e.offsetY);
+                points.setPosition(index, [e.offsetX, e.offsetY]);
+                draw();
             } else if (mousedown) {
                 points.translateBy([e.movementX, e.movementY]);
                 draw();
@@ -386,7 +372,7 @@
         });
         canvas.addEventListener("mouseup",  e => {
             mousedown = false;
-            dragend();
+            index = -1;
         });
         canvas.addEventListener("wheel", e => {
             e.preventDefault();
@@ -394,24 +380,50 @@
             points.scaleBy([e.offsetX, e.offsetY], scale);
             draw();
         });
+        var lasttouches;
         canvas.addEventListener("touchstart", e => {
+            lasttouches = e.touches;
             dragstart(e.touches[0].pageX, e.touches[0].pageY);
         });
         canvas.addEventListener("touchmove", e => {
             if (e.touches.length == 1) {
                 e.preventDefault();
-                dragmove(e.touches[0].pageX, e.touches[0].pageY);
+                if (index != -1) {
+                    points.setPosition(index, [e.touches[0].pageX, e.touches[0].pageY]);
+                } else {
+                    points.translateBy([e.touches[0].pageX - lasttouches[0].pageX, e.touches[0].pageY - lasttouches[0].pageY]);
+                }
+                draw();
+            } else if (e.touches.length == 2 && lasttouches.length == 2) {
+                e.preventDefault();
+                function distance(touches) {
+                    const dx = touches[0].pageX - touches[1].pageX;
+                    const dy = touches[0].pageY - touches[1].pageY;
+                    return Math.sqrt(dx * dx + dy * dy);
+                }
+                function center(touches) {
+                    const centerX = (touches[0].pageX + touches[1].pageX) * 0.5;
+                    const centerY = (touches[0].pageY + touches[1].pageY) * 0.5;
+                    return [centerX, centerY];
+                }
+                const lastDistance = distance(lasttouches);
+                const thisDistance = distance(e.touches);
+                const lastCenter = center(lasttouches);
+                const thisCenter = center(e.touches);
+                points.scaleBy(mul(add(lastCenter, thisCenter), 0.5), thisDistance / lastDistance);
+                points.translateBy(sub(thisCenter, lastCenter));
+                draw();
             } else {
-                dragend();
+                index = -1;
             }
+            lasttouches = e.touches;
         });
         canvas.addEventListener("touchend", e => {
-            e.preventDefault();
-            dragend();
+            index = -1;
         });
         canvas.addEventListener("touchcancel", e => {
             e.preventDefault();
-            dragend();
+            index = -1;
         });
 
         const buffer = gl.createBuffer();
