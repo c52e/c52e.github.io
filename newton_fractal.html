@@ -11,14 +11,14 @@
         <table id="params" style="border-collapse: separate;border-spacing: 0 20px;">
             <tr>
                 <td>Iteration Steps</td>
-                <td><input id="steps-input" value="15" onchange="compile();draw()"/></td>
+                <td><input id="steps-input" value="20" onchange="compile();draw()"/></td>
             </tr>
             <tr>
                 <td>Supersampling</td>
                 <td>
                     <select id="supersampling" onchange="compile();draw()">
                         <option value="1">off</option>
-                        <option value="2"> x2</option>
+                        <option value="2" selected="selected"> x2</option>
                         <option value="4"> x4</option>
                         <option value="8"> x8</option>
                     </select>
