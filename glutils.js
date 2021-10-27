@@ -35,3 +35,27 @@ function createProgramById(vertexShaderSrcId, fragmentShaderSrcId) {
     fragmentShaderSrc = document.getElementById(fragmentShaderSrcId).textContent;
     return createProgram(vertexShaderSrc, fragmentShaderSrc);
 }
+
+function add(arr1, arr2) {
+    return arr1.map((x, i) => x + arr2[i]);
+}
+
+function sub(arr1, arr2) {
+    return arr1.map((x, i) => x - arr2[i]);
+}
+
+function mul(lhs, rhs) {
+    if (Array.isArray(rhs)) {
+        return lhs.map((x, i) => x * rhs[i]);
+    } else {
+        return lhs.map((x) => x * rhs);
+    }
+}
+
+function min(arr1, arr2) {
+    return arr1.map((x, i) => Math.min(x, arr2[i]));
+}
+
+function max(arr1, arr2) {
+    return arr1.map((x, i) => Math.max(x, arr2[i]));
+}
