@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Newton Fractal</title>
+    <title class="text" id="title-text">Newton Fractal</title>
 </head>
 <body>
     <canvas id="canvas" style="position:absolute; left:0px; top:0px;"></canvas>
@@ -10,11 +10,11 @@
     <div id="guipanel" style="position:absolute;">
         <table id="params" style="border-collapse: separate;border-spacing: 0 20px;">
             <tr>
-                <td>Iteration Steps</td>
+                <td class="text" id="iteration-text">Iteration Steps</td>
                 <td><input id="steps-input" value="30" onchange="compile();draw()"/></td>
             </tr>
             <tr>
-                <td>Supersampling</td>
+                <td class="text" id="supersamping-text">Supersampling</td>
                 <td>
                     <select id="supersampling" onchange="compile();draw()">
                         <option value="1">off</option>
@@ -25,7 +25,7 @@
                 </td>
             </tr>
             <tr>
-                <td>Appearance</td>
+                <td class="text" id="appearance-text">Appearance</td>
                 <td>
                     <select id="appearance" onchange="compile();draw()">
                         <option value="1" selected="selected">1</option>
@@ -34,36 +34,59 @@
                 </td>
             </tr>
             <tr>
-                <td>Brightness</td>
+                <td class="text" id="brightness-text">Brightness</td>
                 <td><input id="brightness" type="range" min="0.0" max="3.0" step=0.01 value="1.5" oninput="draw()" onchange="draw()"/></td>
             </tr>
             <tr>
-                <td>Contrast</td>
+                <td class="text" id="contrast-text">Contrast</td>
                 <td><input id="contrast" type="range" min="0.0" max="1.0" step=0.01 value="0.5" oninput="draw()" onchange="draw()"/></td>
             </tr>
             <tr>
-                <td>HDR</td>
+                <td class="text" id="hdr-text">HDR</td>
                 <td><input id="hdr" type="checkbox" checked onchange="compile();draw()"/></td>
             </tr>
             <tr>
-                <td>Show Points</td>
+                <td class="text" id="show-points-text">Show Points</td>
                 <td><input id="showpoints" type="checkbox" checked onchange="draw()"/></td>
             </tr>
             <tr>
-                <td>Points</td>
+                <td class="text" id="points-text">Points</td>
                 <td id = "colors"></td>
             </tr>
         </table>
-        <button onclick="points.push();compile();draw()">New</button>
+        <button class="text" id="new-text" onclick="points.push();compile();draw()">New</button>
         &emsp;
-        <button onclick="points.pop();compile();draw()">Delete</button>
+        <button class="text" id="delete-text" onclick="points.pop();compile();draw()">Delete</button>
         
-        <h3>Notes</h3>
+        <h3 class="text" id="notes-text">Notes</h3>
         <ul>
-            <li>You can drag the points with your mouse or finger.</li>
-            <li>You can zoom in or out with your scroll wheel or two fingers.</li>
+            <li class="text" id="note0-text">You can drag the points or the viewport with your mouse or finger.</li>
+            <li class="text" id="note1-text">You can zoom in or out with your scroll wheel or two fingers.</li>
         </ul>
     </div>
+    <script type="text/javascript">
+        if (navigator.language == 'zh-CN') {
+            const text_table = {
+                "title-text" : "牛顿分形",
+                "iteration-text" : "迭代次数",
+                "supersamping-text" : "超采样",
+                "appearance-text" : "外观",
+                "brightness-text" : "亮度",
+                "contrast-text" : "对比度",
+                "hdr-text" : "高动态范围",
+                "show-points-text" : "显示点的位置",
+                "points-text" : "点覆盖区域的颜色",
+                "new-text" : "添加",
+                "delete-text" : "删除",
+                "notes-text" : "注释",
+                "note0-text" : "可以用鼠标或手指拖动点或视口",
+                "note1-text" : "可以用滚轮或双指缩放视口",
+            }
+            for (const element of document.getElementsByClassName('text')) {
+                element.innerText = text_table[element.id];
+            }
+        }
+    </script>
     
     <script type="text/javascript" src="glutils.js"></script>
     <script type="text/javascript">
@@ -112,6 +135,7 @@
                 this.positions[index] = position;
             },
 
+            // Equivalent to changing the viewport.
             scaleBy(position, scale) {
                 for (let i = 0; i < this.length(); ++i) {
                     this.positions[i] = add(mul(sub(this.positions[i], position), scale), position);
