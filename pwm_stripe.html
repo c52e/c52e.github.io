@@ -9,25 +9,69 @@
     <table id="params" style="position:absolute; left:830px; top:10px;">
         <tr>
             <td>感光度</td>
-            <td><input id="iso-input" value="1600" onchange="draw()"/></td>
+            <td><input id="iso-min"/></td>
+            <td><input id="iso-input" type="range"/></td>
+            <td><input id="iso-max"/></td>
+            <td><div id="iso-label"></div></td>
         </tr>
         <tr>
             <td>扫描频率 (HZ)</td>
-            <td><input id="scan-frequency-input" value="50" onchange="draw()"/></td>
+            <td><input id="scan-frequency-min"/></td>
+            <td><input id="scan-frequency-input" type="range"/></td>
+            <td><input id="scan-frequency-max"/></td>
+            <td><div id="scan-frequency-label"></div></td>
         </tr>
         <tr>
             <td>快门速度 (1/t s)</td>
-            <td><input id="exposure-frequency-input" value="1000" onchange="draw()"/></td>
+            <td><input id="exposure-frequency-min"/></td>
+            <td><input id="exposure-frequency-input" type="range"/></td>
+            <td><input id="exposure-frequency-max"/></td>
+            <td><div id="exposure-frequency-label"></div></td>
         </tr>
         <tr>
             <td>PWM频率 (HZ)</td>
-            <td><input id="pwm-frequency-input" value="240" onchange="draw()"/></td>
+            <td><input id="pwm-frequency-min"/></td>
+            <td><input id="pwm-frequency-input" type="range"/></td>
+            <td><input id="pwm-frequency-max"/></td>
+            <td><div id="pwm-frequency-label"></div></td>
         </tr>
         <tr>
             <td>PWM占空比</td>
-            <td><input id="pwm-duty-input" type="range" min="0.0" max="1.0" step=0.01 value="0.5" onchange="draw()"/></td>
+            <td><input id="pwm-duty-min"/></td>
+            <td><input id="pwm-duty-input" type="range"/></td>
+            <td><input id="pwm-duty-max"/></td>
+            <td><div id="pwm-duty-label"></div></td>
         </tr>
     </table>
+
+    <script type="text/javascript">
+        function rangeInit(name, value, min, max, isUnit) {
+            const minInput = document.getElementById(name + "-min");
+            const maxInput = document.getElementById(name + "-max");
+            const rangeInput = document.getElementById(name + "-input");
+            const label = document.getElementById(name + "-label");
+            if (isUnit) {
+                minInput.readOnly = true;
+                maxInput.readOnly = true;
+                rangeInput.step = 0.01;
+            }
+            minInput.size = maxInput.size = 6;
+            rangeInput.min = minInput.value = min;
+            rangeInput.max = maxInput.value = max;
+            label.innerText = rangeInput.value = value;
+            rangeInput.addEventListener("input", e => { draw(); label.innerText = rangeInput.value; });
+            rangeInput.addEventListener("change", e => { draw(); label.innerText = rangeInput.value; });
+            minInput.addEventListener("input", e => { rangeInput.min = minInput.value });
+            minInput.addEventListener("change", e => { rangeInput.min = minInput.value });
+            maxInput.addEventListener("input", e => { rangeInput.max = maxInput.value });
+            maxInput.addEventListener("change", e => { rangeInput.max = maxInput.value });
+        }
+        rangeInit("iso", 1600, 0, 3000);
+        rangeInit("scan-frequency", 50, 0, 1000);
+        rangeInit("exposure-frequency", 1000, 0, 2000);
+        rangeInit("pwm-frequency", 240, 0, 1000);
+        rangeInit("pwm-duty", 0.5, 0, 1, true);
+    </script>
 
     <script id="vertex-shader" type="x-shader/x-vertex">
         attribute vec2 a_position;
