@@ -10,6 +10,10 @@
     <div id="guipanel" style="position:absolute;">
         <table id="params" style="border-collapse: separate;border-spacing: 0 20px;">
             <tr>
+                <td>FPS</td>
+                <td id = "fps"></td>
+            </tr>
+            <tr>
                 <td class="text" id="iteration-text">Iteration Steps</td>
                 <td><input id="steps-input" value="30" onchange="compile();draw()"/></td>
             </tr>
@@ -424,7 +428,13 @@
             };
         }
 
+        var lastTime = 0;
+        const fpsLabel = document.getElementById('fps');
         function draw() {
+            const now = new Date().getTime();
+            fpsLabel.innerHTML = lastTime == 0 ? "" : (1000 / (now - lastTime)).toFixed(1);
+            lastTime = now;
+
             gl.uniform2fv(uniforms.roots, points.positionsArray());
             gl.uniform3fv(uniforms.colors, points.colorsArray());
             gl.uniform1f(uniforms.coordToComplex, coordToComplex);
