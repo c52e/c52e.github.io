@@ -8,7 +8,6 @@
     <button onclick="test(lowp)">Begin Test (Lowp)</button>
     <button onclick="test(mediump)">Begin Test (Mediump)</button>
     <button onclick="test(highp)">Begin Test (Highp)</button>
-    <p>This has been tested only in <b>Firefox</b>.</p>
     <p>NumOperations: <b id="operation"></b></p>
     <table id="params" style="border-collapse: separate;border-spacing: 0 20px;">
         <tr>
@@ -104,7 +103,8 @@
             for (let i = 0; i < c4; ++i) {
                 gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
             }
-            gl.finish();
+            //gl.finish(); // This does not work in Chrome. https://stackoverflow.com/questions/20798294/is-it-possible-to-measure-rendering-time-in-webgl-using-gl-finish
+            gl.readPixels(canvas.width-1, canvas.height-1, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
             const end = Date.now();
             const time = (end - begin) * 1e-3;
             const gflops = num_op / time * 1e-9;
