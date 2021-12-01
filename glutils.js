@@ -52,6 +52,14 @@ function mul(lhs, rhs) {
     }
 }
 
+function div(lhs, rhs) {
+    if (Array.isArray(rhs)) {
+        return lhs.map((x, i) => x / rhs[i]);
+    } else {
+        return lhs.map((x) => x / rhs);
+    }
+}
+
 function min(arr1, arr2) {
     return arr1.map((x, i) => Math.min(x, arr2[i]));
 }
