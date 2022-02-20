@@ -96,15 +96,25 @@
         const mediump = new Program('mediump');
         const highp = new Program('highp');
 
-        function test(program) {
-            program.use();
-
-            const begin = Date.now();
-            for (let i = 0; i < c4; ++i) {
+        function loop(c) {
+            for (let i = 0; i < c; ++i) {
                 gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
             }
             //gl.finish(); // This does not work in Chrome. https://stackoverflow.com/questions/20798294/is-it-possible-to-measure-rendering-time-in-webgl-using-gl-finish
             gl.readPixels(canvas.width-1, canvas.height-1, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
+        }
+
+        function boostGPU() {
+            const begin = Date.now();
+            loop(1024);
+            while (Date.now() - begin < 1000) {}
+        }
+
+        function test(program) {
+            program.use();
+            boostGPU();
+            const begin = Date.now();
+            loop(c4);
             const end = Date.now();
             const time = (end - begin) * 1e-3;
             const gflops = num_op / time * 1e-9;
