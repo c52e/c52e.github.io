@@ -1,0 +1,243 @@
+<!DOCTYPE html> 
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title class="text" id="title-text">Paraboloid Projection</title>
+    <style>
+        body {
+            background-color: #000000;
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" style="position:absolute; left:0px; top:0px;"></canvas>
+    
+    <div id="guipanel" style="position:absolute;">
+        <table id="params" style="border-collapse: separate;border-spacing: 0 20px;">
+            <tr>
+                <td>Mesh Width</td>
+                <td><input id="meshwidth" type="range" min="1" max="100" step="1" value="40"/></td>
+                <td><p id="meshwidthvalue">40</p></td>
+            </tr>
+            <tr>
+                <td>Projection</td>
+                <td>
+                    <select id="projection">
+                        <option value="PERSPECTIVE">perspective</option>
+                        <option value="PARABOLOID" selected="selected">paraboloid</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>Fov</td>
+                <td><input id="fov" type="range" min="1" max="180" step=1 value="90" disabled/></td>
+                <td><p id="fovvalue">90</p></td>
+            </tr>
+        </table>
+    </div>
+    
+    <script type="text/javascript" src="lib/three.min.js"></script>
+    <script type="text/javascript" src="lib/OrbitControls.js"></script>
+    <script type="text/javascript" src="glutils.js"></script>
+    <script type="text/javascript">
+        const canvas = document.getElementById("canvas");
+        const canvas_width = Math.min(window.innerWidth, window.innerHeight);
+        canvas.width = canvas_width;
+        canvas.height = canvas_width;
+        const guipanel = document.getElementById("guipanel");
+        if (window.innerWidth > window.innerHeight) {
+            guipanel.style.left = 20 + window.innerHeight + "px";
+            guipanel.style.top = "0px";
+        } else {
+            guipanel.style.top = window.innerWidth + "px";
+            guipanel.style.left = "20px";
+        }
+
+        const gl = canvas.getContext("webgl2");
+
+        var uniforms;
+        var meshWidth = 30;
+        
+        const vbo = gl.createBuffer();
+        const ebo = gl.createBuffer();
+        const instanceVBO = gl.createBuffer();
+        const texture = gl.createTexture();
+        const models = [
+            new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(1,0,0), Math.PI * 0),
+            new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(1,0,0), Math.PI * 0.5),
+            new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(1,0,0), Math.PI * 1.0),
+            new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(1,0,0), Math.PI * 1.5),
+            new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(0,0,1), Math.PI * 0.5),
+            new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(0,0,1), Math.PI * 1.5),
+        ];
+
+        function resetMesh() {
+            const verticeWidth = meshWidth + 1;
+            const verticeCnt = verticeWidth * verticeWidth;
+            const vertices = new Float32Array(verticeCnt * 5);
+            for (let i = 0; i < verticeCnt; ++i) {
+                const u = (i % verticeWidth) / meshWidth;
+                const v = Math.floor(i / verticeWidth) / meshWidth;
+                vertices[i * 5 + 0] = u * 2.0 - 1.0;
+                vertices[i * 5 + 1] = -1.0;
+                vertices[i * 5 + 2] = v * 2.0 - 1.0;
+                vertices[i * 5 + 3] = u;
+                vertices[i * 5 + 4] = v;
+            }
+            const squareCnt = meshWidth * meshWidth;
+            indices = new Uint32Array(squareCnt * 6);
+            for (let i = 0; i < squareCnt; ++i) {
+                const u = i % meshWidth;
+                const v = Math.floor(i / meshWidth);
+                indices[i * 6 + 0] = v * verticeWidth + u;
+                indices[i * 6 + 1] = v * verticeWidth + u + 1;
+                indices[i * 6 + 2] = (v + 1) * verticeWidth + u;
+                indices[i * 6 + 3] = v * verticeWidth + u + 1;
+                indices[i * 6 + 4] = (v + 1) * verticeWidth + u;
+                indices[i * 6 + 5] = (v + 1) * verticeWidth + u + 1;
+            }
+            gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+            gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo);
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+        }
+        resetMesh();
+        document.getElementById("meshwidth").oninput = function() {
+            meshWidth = this.value;
+            resetMesh();
+            document.getElementById("meshwidthvalue").innerHTML = meshWidth
+        }
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+        gl.vertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 5 * 4, 0);
+        gl.enableVertexAttribArray(0);
+        gl.vertexAttribPointer(1, 2, gl.FLOAT, gl.FALSE, 5 * 4, 3 * 4);
+        gl.enableVertexAttribArray(1);
+        
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, instanceVBO);
+        const modelsBuffer = new Float32Array(6 * 16);
+        for (let i = 0; i < 6; ++i)
+            modelsBuffer.set(models[i].elements, i * 16);
+        gl.bufferData(gl.ARRAY_BUFFER, modelsBuffer, gl.STATIC_DRAW);
+
+        gl.enableVertexAttribArray(2);
+        gl.vertexAttribPointer(2, 4, gl.FLOAT, gl.FALSE, 16 * 4, 0);
+        gl.enableVertexAttribArray(3);
+        gl.vertexAttribPointer(3, 4, gl.FLOAT, gl.FALSE, 16 * 4, 4 * 4);
+        gl.enableVertexAttribArray(4);
+        gl.vertexAttribPointer(4, 4, gl.FLOAT, gl.FALSE, 16 * 4, 2 * 4 * 4);
+        gl.enableVertexAttribArray(5);
+        gl.vertexAttribPointer(5, 4, gl.FLOAT, gl.FALSE, 16 * 4, 3 * 4 * 4);
+        gl.vertexAttribDivisor(2, 1);
+        gl.vertexAttribDivisor(3, 1);
+        gl.vertexAttribDivisor(4, 1);
+        gl.vertexAttribDivisor(5, 1);
+
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        const textureWidth = 2048;
+        gl.texStorage2D(gl.TEXTURE_2D, 12, gl.RGBA8, textureWidth, textureWidth);
+        const pixels = new Int32Array(textureWidth * textureWidth);
+        for (let i = 0; i < textureWidth; ++i) {
+            for (let j = 0; j < textureWidth; ++j) {
+                pixels[i * textureWidth + j] = (Math.floor(i / 128) & 1) == (Math.floor(j / 128) & 1) ? 0xffffffff : 0xff000000;
+            }
+        }
+        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, textureWidth, textureWidth, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(pixels.buffer));
+        gl.generateMipmap(gl.TEXTURE_2D);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+        function compile() {
+            const vertex_shader = `#version 300 es
+            layout(location = 0) in vec3 aPos;
+            layout(location = 1) in vec2 aUv;
+            layout(location = 2) in mat4 aModel;
+            uniform mat4 uView;
+            uniform mat4 uProjection;
+            out vec3 vColorScale;
+            out vec2 vUv;
+            void main() {
+                gl_Position = aModel * vec4(aPos, 1.0);
+                vColorScale = mix(vec3(0.1), vec3(1.0), gl_Position.xyz * 0.5 + 0.5);
+                gl_Position = uView * gl_Position;
+	            vUv = aUv;
+                
+                #define ${document.getElementById("projection").value}
+            #ifdef PARABOLOID
+                // https://cdn.imgtec.com/sdk-documentation/Dual+Paraboloid+Environment+Mapping.Whitepaper.pdf
+                float Distance = -gl_Position.z;
+
+                // Calculate and set the X and Y coordinates 
+                gl_Position.xyz = normalize(gl_Position.xyz);
+                gl_Position.xy /= 1.0 - gl_Position.z;
+
+                // Calculate and set the Z and W coordinates
+                float near = 0.0;
+                float far = 10.0;
+                gl_Position.z = (Distance - near) / (far - near) * 2.0 - 1.0;
+                gl_Position.w = 1.0;
+            #else
+                gl_Position = uProjection * gl_Position;
+            #endif
+            }
+            `;
+            
+            
+            const fragment_shader = `#version 300 es
+            precision highp float;
+            uniform sampler2D uSampler;
+            in vec3 vColorScale;
+            in vec2 vUv;
+            out vec4 FragColor;
+            void main() {
+                FragColor = vec4(vColorScale * texture(uSampler, vUv).rgb,1);
+            }
+            `;
+
+            const program = createProgram(vertex_shader, fragment_shader);
+            gl.useProgram(program);
+            uniforms = {
+                uView : gl.getUniformLocation(program,'uView'),
+                uProjection : gl.getUniformLocation(program,'uProjection'),
+                uSampler : gl.getUniformLocation(program,'uSampler'),
+            };
+        }
+        document.getElementById("projection").onchange = function() {
+            compile();
+            document.getElementById("fov").disabled = (this.value == "PARABOLOID");
+        }
+        compile();
+        
+        const camera = new THREE.PerspectiveCamera(90, 1, 0.1, 1000);
+        camera.position.set(0.5, 0.5, 0);
+        const controls = new THREE.OrbitControls(camera, canvas);
+        controls.target.set(0, 0, 0);
+
+        document.getElementById("fov").oninput = function() {
+            camera.fov = this.value;
+            camera.updateProjectionMatrix();
+            document.getElementById("fovvalue").innerHTML = this.value;
+        }
+
+        function render() {
+            requestAnimationFrame(render);
+            controls.update();
+            
+            gl.enable(gl.DEPTH_TEST);
+            gl.clearColor(0.0, 0.0, 0.0, 1.0);
+            gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
+            gl.uniformMatrix4fv(uniforms.uView, false, new Float32Array(camera.matrixWorldInverse.elements));
+            gl.uniformMatrix4fv(uniforms.uProjection, false, new Float32Array(camera.projectionMatrix.elements));
+            gl.uniform1i(uniforms.uSampler, 0);
+            gl.drawElementsInstanced(gl.TRIANGLES, meshWidth * meshWidth * 6, gl.UNSIGNED_INT, 0, models.length);
+        }
+        render();
+    </script>
+</body>
+</html>
