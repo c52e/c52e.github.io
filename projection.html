@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title class="text" id="title-text">Paraboloid Projection</title>
+    <title class="text" id="title-text">Projection</title>
     <style>
         body {
             background-color: #000000;
@@ -26,6 +26,9 @@
                     <select id="projection">
                         <option value="PERSPECTIVE">perspective</option>
                         <option value="PARABOLOID" selected="selected">paraboloid</option>
+                        <option value="HEMIOCTAHEDRON">hemi-octahedron</option>
+                        <option value="OCTAHEDRON">octahedron</option>
+                        <option value="SPHERE">sphere</option>
                     </select>
                 </td>
             </tr>
@@ -169,6 +172,8 @@
 	            vUv = aUv;
                 
                 #define ${document.getElementById("projection").value}
+                float near = 0.0;
+                float far = 10.0;
             #ifdef PARABOLOID
                 // https://cdn.imgtec.com/sdk-documentation/Dual+Paraboloid+Environment+Mapping.Whitepaper.pdf
                 float Distance = -gl_Position.z;
@@ -178,9 +183,56 @@
                 gl_Position.xy /= 1.0 - gl_Position.z;
 
                 // Calculate and set the Z and W coordinates
-                float near = 0.0;
-                float far = 10.0;
                 gl_Position.z = (Distance - near) / (far - near) * 2.0 - 1.0;
+                gl_Position.w = 1.0;
+            #elif defined(HEMIOCTAHEDRON)
+                // https://gamedev.stackexchange.com/questions/169508/octahedral-impostors-octahedral-mapping
+                float Distance = -gl_Position.z;
+                vec3 direction = gl_Position.xyz;
+
+                direction.xy = vec2(direction.x - direction.y, direction.x + direction.y);
+
+                vec3 octant = sign(direction);
+                
+                float sum = dot(direction, octant);
+                vec3 octahedron = direction / sum;
+
+                gl_Position.xy = vec2(octahedron.x + octahedron.y, octahedron.y - octahedron.x);
+                gl_Position.z = (Distance - near) / (far - near) * 2.0 - 1.0;
+                gl_Position.w = 1.0;
+            #elif defined(OCTAHEDRON)
+                // https://gamedev.stackexchange.com/questions/169508/octahedral-impostors-octahedral-mapping
+                float Distance = length(gl_Position.xyz);
+                vec3 direction = gl_Position.xyz;
+
+                vec3 octant = sign(direction);
+
+                // Scale the vector so |x| + |y| + |z| = 1 (surface of octahedron).
+                float sum = dot(direction, octant);
+                vec3 octahedron = direction / sum;
+
+                // "Untuck" the corners using the same reflection across the diagonal as before.
+                // (A reflection is its own inverse transformation).
+                if (octahedron.z > 0.0) {
+                    vec3 absolute = abs(octahedron);
+                    octahedron.xy = octant.xy * vec2(1.0f - absolute.y, 1.0f - absolute.x);
+                }
+
+                gl_Position.xy = octahedron.xy;
+                gl_Position.z = (Distance - near) / (far - near) * 2.0 - 1.0;
+                if (octahedron.z > 0.86) gl_Position.z = -2.0; // Avoid triangles that intersect with back covering front face.
+                gl_Position.w = 1.0;
+            #elif defined(SPHERE)
+                float Distance = length(gl_Position.xyz);
+
+                vec3 dir = normalize(gl_Position.xyz);
+                dir.z += -1.0;
+                dir = normalize(dir);
+                gl_Position.xy = dir.xy;
+                gl_Position.z = (Distance - near) / (far - near) * 2.0 - 1.0;
+
+                if (dir.z > -0.1) gl_Position.z = -2.0; // Avoid triangles that intersect with back covering front face.
+                
                 gl_Position.w = 1.0;
             #else
                 gl_Position = uProjection * gl_Position;
@@ -210,7 +262,7 @@
         }
         document.getElementById("projection").onchange = function() {
             compile();
-            document.getElementById("fov").disabled = (this.value == "PARABOLOID");
+            document.getElementById("fov").disabled = (this.value != "PERSPECTIVE");
         }
         compile();
         
