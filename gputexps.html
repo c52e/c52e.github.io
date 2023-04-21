@@ -1,0 +1,134 @@
+<!DOCTYPE html> 
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>GPU Texture Rate Test</title>
+</head>
+<body>
+    <button onclick="test(lowp)">Begin Test (Lowp)</button>
+    <button onclick="test(mediump)">Begin Test (Mediump)</button>
+    <button onclick="test(highp)">Begin Test (Highp)</button>
+    <p>NumOperations: <b id="operation"></b></p>
+    <table id="params" style="border-collapse: separate;border-spacing: 0 20px;">
+        <tr>
+            <td>Performance: </td>
+            <td><b id="TEXPS"></b></td>
+            <td>GTexel/s</td>
+        </tr>
+        <tr>
+            <td>Time: </td>
+            <td><b id="time"></b></td>
+            <td>s</td>
+        </tr>
+    </table>
+    <canvas id="canvas" width=512 height=512></canvas>
+    
+    <script type="text/javascript" src="glutils.js"></script>
+    <script type="text/javascript">
+        const canvas = document.getElementById("canvas");
+        const gl = canvas.getContext("webgl");
+        
+        const c2 = 256;
+        const c3 = canvas.width * canvas.height;
+        const c4 = 1024;
+        const num_op = c2 * c3 * c4;
+        document.getElementById('operation').innerHTML = num_op;
+
+        const buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.enableVertexAttribArray(0);
+        gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 8, 0);
+        const array = new Float32Array([
+            -1, -1,
+            -1, +1,
+            +1, -1,
+            +1, +1,
+        ]);
+        gl.bufferData(gl.ARRAY_BUFFER, array, gl.STATIC_DRAW);
+
+        const texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        const array2 = new Float32Array([
+            0,0,0,255,
+            255,0,0,255,
+            0,255,0,255,
+            255,255,0,255,
+        ]);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 2, 2, 0, gl.RGBA, gl.UNSIGNED_BYTE, array2);
+        
+        function Program(precision) {
+            this.vertex = `
+            attribute vec2 a_position;
+            varying vec2 position;
+            void main() {
+                gl_Position = vec4(a_position, 0, 1);
+                position = a_position * 0.5 + 0.5;
+            }
+            `;
+            this.fragment = `
+            precision ${precision} float;
+
+            uniform sampler2D tex;
+            varying vec2 position;
+            
+            void main() {
+                vec2 res = position;
+                for (int i = 0; i < ${c2}; i++) {
+                    vec4 tmp = texture2D(tex, vec2(i)); res += tmp.xy;
+                }
+                gl_FragColor = vec4(res, 0.0, 1.0);
+            }
+            `;
+            this.inited = false;
+        }
+
+        Program.prototype.use = function() {
+            if (!this.inited) {
+                this.program = createProgram(this.vertex, this.fragment);
+                gl.useProgram(this.program);
+                this.paramLocation = gl.getUniformLocation(this.program, "param");
+                this.inited = true;
+            }
+            gl.useProgram(this.program);
+            
+            const k1 = Math.random() + 1;
+            const b1 = Math.random() + 1;
+            const k2 = 1 / k1;
+            const b2 = -b1 * k2;
+            gl.uniform4f(this.paramLocation, k1, b1, k2, b2);
+        }
+        
+        const lowp = new Program('lowp');
+        const mediump = new Program('mediump');
+        const highp = new Program('highp');
+
+        function loop(c) {
+            for (let i = 0; i < c; ++i) {
+                gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+            }
+            //gl.finish(); // This does not work in Chrome. https://stackoverflow.com/questions/20798294/is-it-possible-to-measure-rendering-time-in-webgl-using-gl-finish
+            gl.readPixels(canvas.width-1, canvas.height-1, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
+        }
+
+        function boostGPU() {
+            const begin = Date.now();
+            loop(1024);
+            while (Date.now() - begin < 1000) {}
+        }
+
+        function test(program) {
+            program.use();
+            boostGPU();
+            const begin = Date.now();
+            loop(c4);
+            const end = Date.now();
+            const time = (end - begin) * 1e-3;
+            const gtexps = num_op / time * 1e-9;
+            document.getElementById('TEXPS').innerHTML = gtexps.toFixed(2);
+            document.getElementById('time').innerHTML = time.toFixed(2);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+        }
+
+    </script>
+</body>
+</html>
